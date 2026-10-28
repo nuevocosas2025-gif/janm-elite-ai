@@ -124,10 +124,10 @@ export default function OutboundCadencePage() {
         setCurrentBatchIndex(0);
         setToastMsg(`Sincronización exitosa: ${prepared.length} registros cargados desde CRM3 EVA.`);
       } else {
-        alert('Se vinculó la hoja pero no se leyeron filas públicas. Asegúrese de que en Google Drive el enlace esté como "Cualquiera con el enlace puede leer".');
+        alert('⚠️ Google bloqueó la lectura porque la hoja está en modo "Restringido".\n\nPara solucionarlo (solo toma 5 segundos):\n1. En tu hoja de Google Drive haz clic en el botón "Compartir" (arriba a la derecha).\n2. En "Acceso general", cámbialo a: "Cualquier persona que tenga el vínculo".\n3. Haz clic en "Listo" y vuelve a presionar Vincular.');
       }
     } catch {
-      alert('Error al acceder a la hoja.');
+      alert('⚠️ No se pudo conectar con Google Sheets. Asegúrese de que la hoja tenga el acceso general como "Cualquier persona con el vínculo".');
     } finally {
       setIsSyncing(false);
       setTimeout(() => setToastMsg(null), 5000);
