@@ -2,30 +2,31 @@
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { crmService } from '@/services/crmService';
+import { crmService, type UnifiedCRMRecord } from '@/services/crmService';
 import { VALID_PROSPECT_STATUSES } from '@/lib/security';
-import type { Prospect, ProspectStatus } from '@/types';
+import type { ProspectStatus } from '@/types';
 import { 
   Search, 
   Filter, 
-  AlertCircle, 
   CheckCircle2, 
-  Clock, 
-  User, 
+  FileSpreadsheet, 
   Phone, 
-  Mail, 
+  Send,
   Edit3, 
-  ShieldAlert,
-  ArrowUpDown
+  Sparkles,
+  Users,
+  Check,
+  X
 } from 'lucide-react';
 
 export default function ProspectsCRMPage() {
-  const [prospects, setProspects] = useState<Prospect[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<ProspectStatus | 'ALL'>('ALL');
+  const [prospects, setProspects] = useState<UnifiedCRMRecord[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
+  const [editingProspect, setEditingProspect] = useState<UnifiedCRMRecord | null>(null);
   const [newStatus, setNewStatus] = useState<ProspectStatus>('Nuevo');
+  const [newSalesStatus, setNewSalesStatus] = useState<string>('NO RESPONDE');
   const [newNotes, setNewNotes] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [enrollConfirmWarning, setEnrollConfirmWarning] = useState(false);
@@ -34,7 +35,7 @@ export default function ProspectsCRMPage() {
   const fetchProspects = async () => {
     setIsLoading(true);
     try {
-      const data = await crmService.getProspects(selectedStatus, searchQuery);
+      const data = await crmService.getProspects();
       setProspects(data);
     } finally {
       setIsLoading(false);
@@ -43,11 +44,12 @@ export default function ProspectsCRMPage() {
 
   useEffect(() => {
     fetchProspects();
-  }, [selectedStatus, searchQuery]);
+  }, []);
 
-  const handleOpenEdit = (p: Prospect) => {
+  const handleOpenEdit = (p: UnifiedCRMRecord) => {
     setEditingProspect(p);
     setNewStatus(p.status);
+    setNewSalesStatus(p.estadoVenta);
     setNewNotes(p.notes || '');
     setEnrollConfirmWarning(false);
   };
@@ -55,7 +57,6 @@ export default function ProspectsCRMPage() {
   const handleSaveStatus = async () => {
     if (!editingProspect) return;
 
-    // Regla de Sección 11: Confirmación obligatoria antes de marcar 'Matriculado'
     if (newStatus === 'Matriculado' && !enrollConfirmWarning) {
       setEnrollConfirmWarning(true);
       return;
@@ -67,189 +68,226 @@ export default function ProspectsCRMPage() {
       setToastMsg(`Estado de ${editingProspect.contact?.full_name} actualizado a "${newStatus}"`);
       setTimeout(() => setToastMsg(null), 4000);
       setEditingProspect(null);
-      fetchProspects();
+      await fetchProspects();
     } catch {
-      alert('Error al actualizar prospecto');
+      alert('Error al actualizar registro');
     } finally {
       setIsUpdating(false);
     }
   };
 
+  // Filtrado según búsqueda y estado
+  const filtered = prospects.filter(p => {
+    const matchesSearch = 
+      p.contact?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.contact?.phone?.includes(searchQuery) ||
+      p.estadoVenta?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.responsable?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (selectedStatus === 'ALL') return matchesSearch;
+    return matchesSearch && (p.estadoVenta === selectedStatus || p.status === selectedStatus);
+  });
+
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* ENCABEZADO */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* ENCABEZADO DE ALTO CONTRASTE */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#0E1424] via-[#121B30] to-[#0E1424] p-6 rounded-3xl border border-amber-500/30 shadow-2xl">
           <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">
-              CRM y Seguimiento Comercial de Prospectos
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 text-[11px] font-mono font-bold mb-2">
+              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-400" />
+              BASE DE DATOS UNIFICADA · CRM3 EVA
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Clientes y Ventas <span className="text-amber-400">(Excel CRM)</span>
             </h1>
-            <p className="text-xs text-zinc-400 mt-1">
-              Embudo oficial con 9 estados, control de consentimiento y confirmación de matrícula.
+            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
+              Visualización fiel con las cabeceras exactas de la hoja: PB/L, Nombres, Responsable, Número, Estado de Venta y Descripción.
             </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="px-4 py-2 rounded-2xl bg-slate-900 border border-amber-500/30 text-xs font-mono font-bold text-amber-300">
+              Total Registros: {prospects.length}
+            </span>
           </div>
         </div>
 
         {/* NOTIFICACIÓN TOAST */}
         {toastMsg && (
-          <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{toastMsg}</span>
+          <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-400/60 text-emerald-200 text-xs sm:text-sm flex items-center gap-3 shadow-lg animate-in fade-in">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span className="font-semibold">{toastMsg}</span>
           </div>
         )}
 
         {/* BARRA DE FILTROS Y BÚSQUEDA */}
-        <div className="p-4 rounded-2xl bg-janm-surface border border-janm-border flex flex-col md:flex-row gap-3 items-center justify-between">
+        <div className="p-4 sm:p-5 rounded-2xl bg-[#0D1322] border border-slate-800 flex flex-col md:flex-row gap-3 items-center justify-between shadow-xl">
           <div className="relative w-full md:w-96">
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
             <input
               type="text"
-              placeholder="Buscar por nombre, WhatsApp o correo..."
+              placeholder="Buscar por nombre, teléfono o estado..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-janm-dark border border-janm-border rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-janm-gold"
+              className="w-full bg-[#080B14] border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
-            <Filter className="w-4 h-4 text-zinc-400 shrink-0" />
-            <select
-              value={selectedStatus}
-              onChange={e => setSelectedStatus(e.target.value as any)}
-              className="bg-janm-dark border border-janm-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-janm-gold cursor-pointer"
-            >
-              <option value="ALL">Todos los Estados (9)</option>
-              {VALID_PROSPECT_STATUSES.map(s => (
-                <option key={s} value={s}>{s}</option>
+          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
+            <span className="text-xs font-bold text-slate-300">Filtrar por Estado:</span>
+            <div className="flex gap-1.5">
+              {['ALL', 'NO RESPONDE', 'PERDIDO', 'CERRADO'].map(st => (
+                <button
+                  key={st}
+                  onClick={() => setSelectedStatus(st)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    selectedStatus === st
+                      ? 'bg-amber-500 text-black shadow-md'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                  }`}
+                >
+                  {st === 'ALL' ? 'Todos' : st}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
         </div>
 
-        {/* TABLA DE PROSPECTOS */}
-        <div className="rounded-2xl bg-janm-surface border border-janm-border overflow-hidden">
+        {/* TABLA PRINCIPAL CON LAS CABECERAS EXACTAS DE GOOGLE SHEETS */}
+        <div className="rounded-3xl bg-[#0D1322] border border-slate-800 overflow-hidden shadow-2xl">
+          <div className="p-4 border-b border-slate-800 bg-[#080B14] flex justify-between items-center">
+            <span className="font-black text-xs text-white flex items-center gap-2 tracking-wide uppercase">
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              Hoja: CRM3 EVA · Pestaña: Tabla_1 (Filas Reales Sincronizadas)
+            </span>
+            <span className="text-xs text-amber-300/80 font-mono font-bold">
+              Mostrando {filtered.length} contactos
+            </span>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-janm-border/60 bg-janm-dark/50 text-zinc-400">
-                  <th className="py-3 px-4 font-semibold">Prospecto / Contacto</th>
-                  <th className="py-3 px-4 font-semibold">Curso de Interés</th>
-                  <th className="py-3 px-4 font-semibold">Estado Comercial</th>
-                  <th className="py-3 px-4 font-semibold">Canal / Origen</th>
-                  <th className="py-3 px-4 font-semibold">Fecha Registro</th>
-                  <th className="py-3 px-4 font-semibold text-right">Acción</th>
+                <tr className="border-b border-slate-800 bg-slate-900/60 text-slate-300 font-mono">
+                  <th className="py-3.5 px-4 font-bold text-amber-400">PB/L</th>
+                  <th className="py-3.5 px-4 font-bold text-white">NOMBRES</th>
+                  <th className="py-3.5 px-3 font-bold text-amber-400">RESPONSABLE</th>
+                  <th className="py-3.5 px-4 font-bold text-emerald-400">NUMERO</th>
+                  <th className="py-3.5 px-3 font-bold text-white">ESTADO DE VENTA</th>
+                  <th className="py-3.5 px-4 font-bold text-slate-300">DESCRIPCION</th>
+                  <th className="py-3.5 px-4 font-bold text-right text-amber-400">ACCIONES</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-janm-border/40">
+              <tbody className="divide-y divide-slate-800/60">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-zinc-500">
-                      Cargando prospectos del CRM...
+                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                      Cargando datos del CRM...
                     </td>
                   </tr>
-                ) : prospects.length === 0 ? (
+                ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-zinc-500">
-                      No se encontraron prospectos con los filtros actuales.
+                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                      No se encontraron registros con los criterios actuales.
                     </td>
                   </tr>
                 ) : (
-                  prospects.map(p => (
-                    <tr key={p.id} className="hover:bg-janm-surfaceLight/50 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-white text-sm">
-                          {p.contact?.full_name || 'Sin nombre'}
-                        </div>
-                        <div className="flex items-center gap-3 text-[11px] text-zinc-400 mt-0.5">
-                          {p.contact?.phone && (
-                            <span className="flex items-center gap-1 text-emerald-400">
-                              <Phone className="w-3 h-3" />
-                              {p.contact.phone}
-                            </span>
-                          )}
-                          {p.contact?.email && (
-                            <span className="flex items-center gap-1 text-zinc-400 truncate max-w-[160px]">
-                              <Mail className="w-3 h-3" />
-                              {p.contact.email}
-                            </span>
-                          )}
-                        </div>
-                      </td>
+                  filtered.map(p => {
+                    const cleanPhone = (p.contact?.phone || '').replace(/\D/g, '');
+                    const waLink = `https://wa.me/${cleanPhone}`;
 
-                      <td className="py-3.5 px-4">
-                        <span className="font-medium text-amber-300">
-                          {p.course?.name || 'Por definir'}
-                        </span>
-                        {p.notes && (
-                          <p className="text-[11px] text-zinc-400 truncate max-w-[220px] mt-0.5">
-                            {p.notes}
-                          </p>
-                        )}
-                      </td>
+                    return (
+                      <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
+                        {/* PB/L */}
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-400 text-xs">
+                          {p.codigo}
+                        </td>
 
-                      <td className="py-3.5 px-4">
-                        <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                          p.status === 'Matriculado'
-                            ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-                            : p.status === 'Matrícula en proceso'
-                            ? 'bg-blue-500/10 text-blue-300 border-blue-500/30'
-                            : p.status === 'Interesado'
-                            ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-                            : p.status === 'Solicita no recibir comunicaciones'
-                            ? 'bg-red-500/10 text-red-300 border-red-500/30'
-                            : 'bg-zinc-800 text-zinc-300 border-zinc-700'
-                        }`}>
-                          {p.status}
-                        </span>
-                      </td>
+                        {/* NOMBRES */}
+                        <td className="py-3.5 px-4 font-extrabold text-white text-sm">
+                          {p.contact?.full_name}
+                        </td>
 
-                      <td className="py-3.5 px-4">
-                        <span className="text-zinc-300 font-mono text-[11px]">
-                          {p.contact?.source || 'CHATBOT'}
-                        </span>
-                      </td>
+                        {/* RESPONSABLE */}
+                        <td className="py-3.5 px-3">
+                          <span className="px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            {p.responsable}
+                          </span>
+                        </td>
 
-                      <td className="py-3.5 px-4 text-zinc-400 font-mono text-[11px]">
-                        {new Date(p.created_at).toLocaleDateString()}
-                      </td>
+                        {/* NUMERO */}
+                        <td className="py-3.5 px-4 font-mono font-bold text-emerald-400 text-xs">
+                          {p.contact?.phone}
+                        </td>
 
-                      <td className="py-3.5 px-4 text-right">
-                        <button
-                          onClick={() => handleOpenEdit(p)}
-                          className="px-3 py-1.5 rounded-lg bg-janm-surfaceLight border border-janm-border text-zinc-300 hover:text-amber-400 hover:border-amber-400/40 text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>Actualizar</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        {/* ESTADO DE VENTA */}
+                        <td className="py-3.5 px-3">
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-xs font-black font-mono tracking-wider ${
+                              p.estadoVenta === 'CERRADO'
+                                ? 'bg-emerald-500 text-black shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+                                : p.estadoVenta === 'PERDIDO'
+                                ? 'bg-red-600/90 text-white'
+                                : 'bg-indigo-900/80 text-indigo-200 border border-indigo-500/40'
+                            }`}
+                          >
+                            {p.estadoVenta}
+                          </span>
+                        </td>
+
+                        {/* DESCRIPCION */}
+                        <td className="py-3.5 px-4 text-slate-300 max-w-xs">
+                          <span className="line-clamp-2">{p.descripcion || p.notes}</span>
+                        </td>
+
+                        {/* ACCIONES */}
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <a
+                              href={waLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white transition-all cursor-pointer"
+                              title="Abrir WhatsApp"
+                            >
+                              <Phone className="w-3.5 h-3.5" />
+                            </a>
+                            <button
+                              onClick={() => handleOpenEdit(p)}
+                              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-amber-400 border border-slate-700 text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                              <span>Actualizar</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* MODAL DE EDICIÓN DE ESTADO */}
+        {/* MODAL PARA ACTUALIZAR ESTADO */}
         {editingProspect && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-janm-surface border border-janm-borderGold rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-in zoom-in-95">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-base font-bold text-white">
-                  Actualizar Prospecto: {editingProspect.contact?.full_name}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+            <div className="w-full max-w-lg bg-[#0E1424] border border-amber-500/40 rounded-3xl p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="text-base font-black text-white">
+                  Actualizar Registro: <span className="text-amber-400">{editingProspect.contact?.full_name}</span>
                 </h3>
-                <button
-                  onClick={() => setEditingProspect(null)}
-                  className="text-zinc-400 hover:text-white"
-                >
-                  ✕
+                <button onClick={() => setEditingProspect(null)} className="text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Nuevo Estado Comercial (Reglas Sección 11)
+                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                    Estado en el CRM:
                   </label>
                   <select
                     value={newStatus}
@@ -257,7 +295,7 @@ export default function ProspectsCRMPage() {
                       setNewStatus(e.target.value as ProspectStatus);
                       setEnrollConfirmWarning(false);
                     }}
-                    className="w-full bg-janm-dark border border-janm-border rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-janm-gold"
+                    className="w-full bg-[#080B14] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
                   >
                     {VALID_PROSPECT_STATUSES.map(s => (
                       <option key={s} value={s}>{s}</option>
@@ -265,47 +303,44 @@ export default function ProspectsCRMPage() {
                   </select>
                 </div>
 
-                {/* ADVERTENCIA DE SEGURIDAD PARA 'MATRICULADO' */}
-                {newStatus === 'Matriculado' && (
-                  <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs flex items-start gap-2.5">
-                    <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="block font-semibold">Confirmación Requerida (Sección 11):</strong>
-                      No marques a un prospecto como matriculado sin confirmación válida del comprobante o pago en tesorería. ¿Confirmas que el pago fue verificado?
-                    </div>
+                {enrollConfirmWarning && (
+                  <div className="p-3 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs space-y-1">
+                    <p className="font-bold">⚠️ Confirmación de Matrícula (CERRADO):</p>
+                    <p>
+                      Marcar este contacto como matriculado registrará la venta exitosa en el reporte oficial. Presione «Confirmar y Guardar» para proceder.
+                    </p>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Notas y Observaciones del Asesor
+                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                    Observaciones / Notas de Seguimiento:
                   </label>
                   <textarea
                     rows={3}
                     value={newNotes}
                     onChange={e => setNewNotes(e.target.value)}
-                    placeholder="Detalles de la llamada, horario acordado, modalidad..."
-                    className="w-full bg-janm-dark border border-janm-border rounded-xl p-3 text-xs text-white outline-none focus:border-janm-gold"
+                    placeholder="Agregue notas sobre la llamada, interés o facilidades acordadas..."
+                    className="w-full bg-[#080B14] border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-400"
                   />
                 </div>
+              </div>
 
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingProspect(null)}
-                    className="px-4 py-2 text-xs text-zinc-400 hover:text-white"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveStatus}
-                    disabled={isUpdating}
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold text-xs hover:brightness-110 shadow-gold-sm cursor-pointer"
-                  >
-                    {isUpdating ? 'Guardando...' : newStatus === 'Matriculado' && !enrollConfirmWarning ? 'Validar Matrícula' : 'Confirmar y Guardar'}
-                  </button>
-                </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  onClick={() => setEditingProspect(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveStatus}
+                  disabled={isUpdating}
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black flex items-center gap-1.5 shadow-md"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>{enrollConfirmWarning ? 'Confirmar y Guardar' : 'Guardar Estado'}</span>
+                </button>
               </div>
             </div>
           </div>

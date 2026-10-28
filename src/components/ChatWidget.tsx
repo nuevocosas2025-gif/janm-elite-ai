@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageSquare, X, Send, Sparkles, Bot, PhoneCall, CheckCircle } from 'lucide-react';
+import { MessageSquare, X, Send, Sparkles, PhoneCall, CheckCircle, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 
 interface Message {
@@ -14,7 +14,7 @@ export function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: '¡Hola! 👋 Soy **JANM ELITE AI**, el asistente oficial de Oratoria JANM Elite.\n\n¿En qué te puedo asesorar hoy? Puedes preguntarme por cursos, horarios, precios en soles o solicitar la llamada de un coordinador.',
+      content: '¡Hola! 👋 Te damos la bienvenida a ORATORIA JANM ELITE 🌟\n\n¿En qué podemos orientarte hoy? Puedes consultarnos por nuestros programas, tarifas oficiales, horarios de sábados o solicitar que una asesora te contacte directamente.',
     },
   ]);
   const [input, setInput] = useState('');
@@ -45,13 +45,13 @@ export function ChatWidget() {
       } else {
         setMessages([
           ...updatedMessages,
-          { role: 'assistant', content: 'Lo sentimos, hubo un retraso en la respuesta. ¿Deseas dejarnos tu número para contactarte?' },
+          { role: 'assistant', content: '¿Deseas que una de nuestras asesoras te llame o te escriba directamente a tu WhatsApp?' },
         ]);
       }
     } catch {
       setMessages([
         ...updatedMessages,
-        { role: 'assistant', content: 'Disculpa, no pudimos procesar tu mensaje. Puedes escribirnos al WhatsApp oficial +51 984 512 345.' },
+        { role: 'assistant', content: 'Puedes comunicarte de inmediato con nuestra coordinación académica al WhatsApp oficial.' },
       ]);
     } finally {
       setIsLoading(false);
@@ -76,18 +76,18 @@ export function ChatWidget() {
           },
         }),
       });
-      const data = await res.json();
+      await res.json();
       setLeadSubmitted(true);
       setShowLeadForm(false);
       setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          content: `✅ ¡Gracias ${leadForm.fullName}! Hemos recibido tus datos (+51 ${leadForm.phone}). Un asesor de Oratoria JANM Elite se comunicará contigo hoy mismo.`,
+          content: `✅ ¡Muchas gracias ${leadForm.fullName}! Hemos recibido tu número (${leadForm.phone}). Tu asesora asignada te escribirá hoy mismo para brindarte toda la información detallada.`,
         },
       ]);
     } catch {
-      alert('Error al enviar tus datos. Por favor inténtalo nuevamente.');
+      alert('Error al registrar datos. Por favor inténtalo nuevamente.');
     } finally {
       setIsLoading(false);
     }
@@ -98,80 +98,80 @@ export function ChatWidget() {
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="flex items-center gap-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 text-black px-5 py-3.5 rounded-full font-bold shadow-gold-md hover:scale-105 transition-all cursor-pointer group"
+          className="flex items-center gap-3 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black px-6 py-4 rounded-full font-black shadow-[0_0_30px_rgba(245,158,11,0.5)] hover:scale-105 transition-all cursor-pointer group border-2 border-amber-300"
         >
           <div className="relative">
-            <Sparkles className="w-5 h-5 text-black animate-pulse" />
+            <Sparkles className="w-5 h-5 text-black animate-spin" style={{ animationDuration: '4s' }} />
           </div>
-          <span className="text-xs font-semibold">¿Dudas? Consultas en Línea (24/7)</span>
+          <span className="text-xs sm:text-sm font-black tracking-wide">¿Consultas? Atención en Línea</span>
         </button>
       ) : (
-        <div className="w-[360px] sm:w-[400px] h-[550px] bg-janm-surface border border-janm-borderGold rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5">
+        <div className="w-[360px] sm:w-[420px] h-[580px] bg-[#0B0F19] border-2 border-amber-500/50 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5">
           {/* Header */}
-          <div className="bg-gradient-to-r from-zinc-900 via-janm-surface to-zinc-900 p-4 border-b border-janm-border flex items-center justify-between">
+          <div className="bg-gradient-to-r from-[#0E1424] via-[#141C30] to-[#0E1424] p-4 border-b border-amber-500/30 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-janm-gold" />
+              <div className="w-10 h-10 rounded-2xl bg-amber-400 flex items-center justify-center font-black text-black text-base shadow-md">
+                J
               </div>
               <div>
-                <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-                  ATENCIÓN VIRTUAL JANM ELITE
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <h4 className="text-xs sm:text-sm font-black text-white flex items-center gap-1.5 leading-tight">
+                  ORATORIA JANM ELITE
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 </h4>
-                <p className="text-[11px] text-zinc-400">Canal Institucional Oficial</p>
+                <p className="text-[10px] text-amber-300 font-mono">Atención Virtual Oficial 24/7</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
               <Link
                 href="/chat"
-                className="text-xs text-amber-400 hover:underline px-2 py-1 rounded"
+                className="text-xs text-amber-400 hover:text-white px-2 py-1 rounded font-bold"
                 title="Abrir en pantalla completa"
               >
                 Pantalla completa
               </Link>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-zinc-400 hover:text-white p-1 rounded-lg"
+                className="text-slate-400 hover:text-white p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* Quick FAQ Chips */}
-          <div className="bg-janm-dark/60 px-3 py-2 border-b border-janm-border/40 flex items-center gap-2 overflow-x-auto text-[11px] no-scrollbar">
+          {/* Botones de consultas rápidas */}
+          <div className="bg-[#080B14] px-3.5 py-2.5 border-b border-slate-800 flex items-center gap-2 overflow-x-auto text-[11px] no-scrollbar">
             <button
-              onClick={() => sendMessage('¿Cuáles son los cursos y precios?')}
-              className="whitespace-nowrap px-2.5 py-1 rounded-full bg-janm-surfaceLight border border-janm-border text-zinc-300 hover:border-amber-400 hover:text-amber-300 transition-colors"
+              onClick={() => sendMessage('¿Cuáles son los cursos y precios en soles?')}
+              className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold hover:border-amber-400 transition-all cursor-pointer"
             >
-              📚 Cursos y Precios
+              📚 Cursos y Costos
             </button>
             <button
-              onClick={() => sendMessage('¿Qué días y horarios tienen clases?')}
-              className="whitespace-nowrap px-2.5 py-1 rounded-full bg-janm-surfaceLight border border-janm-border text-zinc-300 hover:border-amber-400 hover:text-amber-300 transition-colors"
+              onClick={() => sendMessage('¿Qué días y horarios tienen clases presenciales?')}
+              className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold hover:border-amber-400 transition-all cursor-pointer"
             >
-              ⏰ Horarios
+              ⏰ Horarios Sábados
             </button>
             <button
               onClick={() => setShowLeadForm(true)}
-              className="whitespace-nowrap px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 transition-colors"
+              className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 font-bold transition-all cursor-pointer"
             >
-              ✍️ Reservar Cupo
+              ✍️ Reservar Vacante
             </button>
           </div>
 
-          {/* Messages list */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 text-xs sm:text-sm">
+          {/* Mensajes */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs sm:text-sm">
             {messages.map((m, idx) => (
               <div
                 key={idx}
                 className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 whitespace-pre-line leading-relaxed ${
+                  className={`max-w-[88%] rounded-2xl px-4 py-3 whitespace-pre-line leading-relaxed ${
                     m.role === 'user'
-                      ? 'bg-amber-500 text-black font-medium shadow-gold-sm rounded-br-xs'
-                      : 'bg-janm-surfaceLight border border-janm-border text-zinc-200 rounded-bl-xs'
+                      ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold shadow-md rounded-br-none'
+                      : 'bg-[#121A2C] border border-slate-700/80 text-slate-100 rounded-bl-none shadow-sm'
                   }`}
                 >
                   {m.content}
@@ -179,19 +179,21 @@ export function ChatWidget() {
               </div>
             ))}
             {isLoading && (
-              <div className="flex items-center gap-2 text-xs text-amber-400/80 italic">
+              <div className="flex items-center gap-2 text-xs text-amber-300 font-mono">
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                JANM Elite AI está escribiendo...
+                Escribiendo respuesta oficial...
               </div>
             )}
           </div>
 
-          {/* Formulario opcional de captación */}
+          {/* Formulario rápido para reserva */}
           {showLeadForm && !leadSubmitted && (
-            <div className="bg-janm-dark p-3.5 border-t border-janm-borderGold/40 animate-in slide-in-from-bottom-2">
+            <div className="bg-[#080B14] p-4 border-t border-amber-500/30 animate-in slide-in-from-bottom-2">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-semibold text-amber-400">Solicitar Asesoría Personalizada</span>
-                <button onClick={() => setShowLeadForm(false)} className="text-zinc-400 text-xs hover:text-white">✕</button>
+                <span className="text-xs font-black text-amber-400 uppercase tracking-wide">
+                  Reserva Informativa de Vacante
+                </span>
+                <button onClick={() => setShowLeadForm(false)} className="text-slate-400 text-xs hover:text-white">✕</button>
               </div>
               <form onSubmit={handleLeadSubmit} className="space-y-2">
                 <input
@@ -199,7 +201,7 @@ export function ChatWidget() {
                   placeholder="Tu Nombre completo"
                   value={leadForm.fullName}
                   onChange={e => setLeadForm({ ...leadForm, fullName: e.target.value })}
-                  className="w-full text-xs px-2.5 py-1.5 rounded bg-janm-surface border border-janm-border text-white focus:border-amber-400 outline-none"
+                  className="w-full text-xs px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-amber-400 outline-none"
                   required
                 />
                 <input
@@ -207,34 +209,34 @@ export function ChatWidget() {
                   placeholder="Número de WhatsApp (9 dígitos)"
                   value={leadForm.phone}
                   onChange={e => setLeadForm({ ...leadForm, phone: e.target.value })}
-                  className="w-full text-xs px-2.5 py-1.5 rounded bg-janm-surface border border-janm-border text-white focus:border-amber-400 outline-none"
+                  className="w-full text-xs px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-amber-400 outline-none"
                   required
                 />
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-1.5 bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold text-xs rounded hover:brightness-110 cursor-pointer"
+                  className="w-full py-2 bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-black text-xs rounded-xl hover:brightness-110 cursor-pointer shadow-md"
                 >
-                  Enviar a Admisiones
+                  Confirmar Datos para Asesoría
                 </button>
               </form>
             </div>
           )}
 
-          {/* Footer Input */}
-          <div className="p-3 bg-janm-dark border-t border-janm-border flex items-center gap-2">
+          {/* Entrada de texto */}
+          <div className="p-3.5 bg-[#080B14] border-t border-slate-800 flex items-center gap-2">
             <input
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && sendMessage()}
-              placeholder="Escribe tu consulta..."
-              className="flex-1 bg-janm-surface border border-janm-border rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-janm-gold"
+              placeholder="Escribe tu consulta aquí..."
+              className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
             />
             <button
               onClick={() => sendMessage()}
               disabled={isLoading || !input.trim()}
-              className="p-2.5 rounded-xl bg-amber-500 text-black hover:brightness-110 disabled:opacity-40 transition-all cursor-pointer"
+              className="p-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-black hover:brightness-110 disabled:opacity-40 transition-all cursor-pointer font-bold"
             >
               <Send className="w-4 h-4" />
             </button>

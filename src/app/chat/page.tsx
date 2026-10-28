@@ -3,17 +3,14 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { 
-  Bot, 
   Send, 
   RotateCcw, 
   PhoneCall, 
   Shield, 
-  User, 
   Sparkles, 
   ArrowLeft, 
   CheckCircle2, 
-  AlertCircle,
-  HelpCircle
+  MessageSquare
 } from 'lucide-react';
 import { PRIVACY_POLICY_NOTICE } from '@/lib/security';
 
@@ -29,7 +26,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: '¡Hola! Bienvenido a **ORATORIA JANM ELITE** 🎓\n\nSoy tu asesor inteligente. Puedo informarte sobre nuestros programas de oratoria para adultos, jóvenes y niños, horarios, certificación oficial o conectarte directamente con nuestro equipo de admisiones.\n\n¿Qué habilidad te gustaría potenciar hoy?',
+      content: '¡Hola! Te damos la más cordial bienvenida a ORATORIA JANM ELITE 🎓🌟\n\nEstamos aquí para orientarte sobre nuestros programas presenciales y virtuales de oratoria para adultos, jóvenes y niños, horarios de sábados, certificación oficial o conectarte directamente con una de nuestras asesoras de admisiones.\n\n¿Qué objetivo de comunicación te gustaría lograr hoy?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -39,7 +36,6 @@ export default function ChatPage() {
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [leadForm, setLeadForm] = useState({ fullName: '', phone: '', email: '', courseName: '' });
   const [leadSuccess, setLeadSuccess] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'CONNECTED' | 'ERROR'>('CONNECTED');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -89,15 +85,15 @@ export default function ChatPage() {
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           },
         ]);
-        setConnectionStatus('CONNECTED');
       }
-    } catch (e) {
-      setConnectionStatus('ERROR');
+    } catch {
       setMessages([
         ...newHistory,
         {
           role: 'assistant',
-          content: '⚠️ Ocurrió una interrupción momentánea de conexión. Puedes reintentar tu consulta o escribirnos directamente por WhatsApp al +51 984 512 345.',
+          content: '⚠️ Ocurrió una interrupción momentánea. Puedes pulsar el botón a continuación para comunicarte directamente por WhatsApp con nuestro equipo oficial.',
+          handoffRequested: true,
+          handoffUrl: 'https://wa.me/51984512345?text=Hola,%20deseo%20información%20sobre%20los%20cursos%20de%20Oratoria%20JANM%20Elite',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -142,7 +138,7 @@ export default function ChatPage() {
             ...prev,
             {
               role: 'assistant',
-              content: `🎉 **¡Datos registrados con éxito!**\n\nEstimado/a **${leadForm.fullName}**, hemos registrado tu número (+51 ${leadForm.phone}). Un coordinador de admisiones te contactará en breve para reservar tu plaza.`,
+              content: `🎉 ¡Datos registrados con éxito!\n\nEstimado/a ${leadForm.fullName}, hemos registrado tu número (+51 ${leadForm.phone}). Tu asesora asignada te contactará en breve para reservar tu plaza.`,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             },
           ]);
@@ -156,47 +152,47 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-janm-dark text-slate-100">
+    <div className="flex flex-col h-screen bg-[#070A12] text-slate-100">
       {/* HEADER DEL CHAT */}
-      <header className="h-16 px-4 sm:px-6 border-b border-janm-border/60 bg-janm-surface flex items-center justify-between shrink-0">
+      <header className="h-16 px-4 sm:px-6 border-b border-amber-500/30 bg-[#0B0F19] flex items-center justify-between shrink-0 shadow-lg">
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-janm-surfaceLight transition-colors"
-            title="Volver a la portada"
+            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            title="Volver al inicio"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-600 flex items-center justify-center text-black font-extrabold shadow-gold-sm">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-500 flex items-center justify-center text-black font-black text-lg shadow-md">
             J
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-bold text-sm sm:text-base text-white leading-tight">
-                JANM ELITE AI
+              <h1 className="font-black text-sm sm:text-base text-white leading-tight">
+                ORATORIA JANM ELITE
               </h1>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 En línea
               </span>
             </div>
-            <p className="text-[11px] text-zinc-400">Asesor Oficial de Oratoria y Liderazgo</p>
+            <p className="text-[11px] text-amber-300 font-mono">Canal Oficial de Consultas y Admisiones</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowPrivacyModal(true)}
-            className="p-2 text-zinc-400 hover:text-amber-400 hover:bg-janm-surfaceLight rounded-lg text-xs flex items-center gap-1 transition-colors"
+            className="px-3 py-1.5 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700"
             title="Aviso de Privacidad (Ley 29733)"
           >
-            <Shield className="w-4 h-4 text-janm-gold" />
+            <Shield className="w-4 h-4 text-amber-400" />
             <span className="hidden sm:inline">Privacidad</span>
           </button>
 
           <button
             onClick={handleResetChat}
-            className="p-2 text-zinc-400 hover:text-white hover:bg-janm-surfaceLight rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors border border-slate-700"
             title="Reiniciar conversación"
           >
             <RotateCcw className="w-4 h-4" />
@@ -204,40 +200,40 @@ export default function ChatPage() {
         </div>
       </header>
 
-      {/* QUICK SUGGESTIONS BAR */}
-      <div className="px-4 py-2 bg-janm-dark border-b border-janm-border/30 flex items-center gap-2 overflow-x-auto text-xs no-scrollbar">
-        <span className="text-[11px] text-zinc-400 uppercase font-mono tracking-wider shrink-0">
-          Sugerencias:
+      {/* BARRA DE PREGUNTAS RÁPIDAS */}
+      <div className="px-4 py-2.5 bg-[#080B14] border-b border-slate-800 flex items-center gap-2 overflow-x-auto text-xs no-scrollbar">
+        <span className="text-[10px] text-amber-400/80 uppercase font-mono font-bold tracking-wider shrink-0">
+          Consultas rápidas:
         </span>
         <button
           onClick={() => handleSend('¿Cuáles son los cursos disponibles y sus precios en soles?')}
-          className="whitespace-nowrap px-3 py-1 rounded-full bg-janm-surface border border-janm-border hover:border-amber-400 hover:text-amber-300 text-zinc-300 transition-colors"
+          className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold hover:border-amber-400 transition-colors"
         >
-          📚 Cursos y Precios
+          📚 Cursos y Costos
         </button>
         <button
-          onClick={() => handleSend('¿Tienen cursos de oratoria para niños?')}
-          className="whitespace-nowrap px-3 py-1 rounded-full bg-janm-surface border border-janm-border hover:border-amber-400 hover:text-amber-300 text-zinc-300 transition-colors"
+          onClick={() => handleSend('¿Tienen cursos de oratoria para niños y adolescentes?')}
+          className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold hover:border-amber-400 transition-colors"
         >
           🧒 Oratoria Junior
         </button>
         <button
-          onClick={() => handleSend('¿Cómo es la certificación al finalizar?')}
-          className="whitespace-nowrap px-3 py-1 rounded-full bg-janm-surface border border-janm-border hover:border-amber-400 hover:text-amber-300 text-zinc-300 transition-colors"
+          onClick={() => handleSend('¿Cómo es la certificación oficial al finalizar el curso?')}
+          className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold hover:border-amber-400 transition-colors"
         >
-          🎓 Certificación
+          🎓 Certificación Oficial
         </button>
         <button
-          onClick={() => handleSend('Deseo hablar directamente con un asesor humano por WhatsApp')}
-          className="whitespace-nowrap px-3 py-1 rounded-full bg-janm-surface border border-janm-border hover:border-amber-400 hover:text-amber-300 text-zinc-300 transition-colors"
+          onClick={() => handleSend('Deseo hablar directamente con una asesora por WhatsApp')}
+          className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-bold transition-colors"
         >
-          📞 Hablar con Asesor
+          📞 Hablar con Asesora
         </button>
         <button
           onClick={() => setShowLeadModal(true)}
-          className="whitespace-nowrap px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500/25 transition-colors font-medium"
+          className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 hover:bg-amber-500/30 transition-colors font-bold"
         >
-          ✍️ Dejar Datos / Reserva
+          ✍️ Reservar Vacante
         </button>
       </div>
 
@@ -250,32 +246,32 @@ export default function ChatPage() {
               key={idx}
               className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-in fade-in duration-200`}
             >
-              <div className="flex items-end gap-2 max-w-[88%] sm:max-w-[80%]">
+              <div className="flex items-end gap-2.5 max-w-[88%] sm:max-w-[80%]">
                 {!isUser && (
-                  <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 mb-1">
-                    <Bot className="w-4 h-4 text-janm-gold" />
+                  <div className="w-8 h-8 rounded-xl bg-amber-400 flex items-center justify-center font-black text-black text-xs shrink-0 mb-1 shadow-md">
+                    J
                   </div>
                 )}
                 <div
-                  className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-line shadow-sm ${
+                  className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-line shadow-md ${
                     isUser
-                      ? 'bg-amber-500 text-black font-medium rounded-br-none shadow-gold-sm'
-                      : 'bg-janm-surface border border-janm-border text-zinc-200 rounded-bl-none'
+                      ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold rounded-br-none'
+                      : 'bg-[#0E1526] border border-slate-700/80 text-slate-100 rounded-bl-none'
                   }`}
                 >
                   {m.content}
 
                   {/* Botón de transferencia a WhatsApp cuando se requiera */}
                   {m.handoffRequested && m.handoffUrl && (
-                    <div className="mt-3 pt-3 border-t border-zinc-700/60">
+                    <div className="mt-3 pt-3 border-t border-slate-700">
                       <a
                         href={m.handoffUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg transition-all"
                       >
-                        <PhoneCall className="w-3.5 h-3.5" />
-                        <span>Abrir WhatsApp con Asesor Oficial</span>
+                        <PhoneCall className="w-4 h-4" />
+                        <span>Abrir WhatsApp con Asesora Oficial</span>
                       </a>
                     </div>
                   )}
@@ -283,7 +279,7 @@ export default function ChatPage() {
               </div>
 
               {m.timestamp && (
-                <span className="text-[10px] text-zinc-500 mt-1 px-1">
+                <span className="text-[10px] text-slate-400 mt-1 px-1 font-mono">
                   {m.timestamp}
                 </span>
               )}
@@ -292,51 +288,51 @@ export default function ChatPage() {
         })}
 
         {isLoading && (
-          <div className="flex items-center gap-2 text-xs text-amber-400/80 italic pl-9">
+          <div className="flex items-center gap-2 text-xs text-amber-300 font-mono pl-10">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-            JANM Elite AI está procesando la mejor respuesta...
+            Consultando información oficial de la academia...
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
       {/* INPUT AREA */}
-      <footer className="p-4 bg-janm-surface border-t border-janm-border/60 max-w-4xl mx-auto w-full">
+      <footer className="p-4 bg-[#0B0F19] border-t border-slate-800 max-w-4xl mx-auto w-full">
         <div className="flex items-center gap-2">
           <input
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSend()}
-            placeholder="Pregunta sobre cursos, costos o escribe 'ASESOR' para atención humana..."
+            placeholder="Pregunta sobre cursos, costos o escribe 'ASESOR' para atención por WhatsApp..."
             disabled={isLoading}
-            className="flex-1 bg-janm-dark border border-janm-border rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-janm-gold focus:ring-1 focus:ring-janm-gold transition-all"
+            className="flex-1 bg-slate-900 border border-slate-700 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 transition-colors"
           />
           <button
             onClick={() => handleSend()}
             disabled={isLoading || !input.trim()}
-            className="p-3 bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold rounded-xl hover:brightness-110 disabled:opacity-40 transition-all cursor-pointer shadow-gold-sm"
+            className="p-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-black rounded-2xl hover:brightness-110 disabled:opacity-40 transition-all cursor-pointer shadow-md"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-5 h-5" />
           </button>
         </div>
-        <p className="text-[10px] text-zinc-500 text-center mt-2">
-          JANM Elite AI no inventa datos comerciales. Información autorizada y protegida por la Ley N° 29733 de Perú.
+        <p className="text-[10px] text-slate-400 text-center mt-2.5">
+          Atención en línea oficial. Información autorizada y protegida por la Ley N° 29733 de Protección de Datos Personales de Perú.
         </p>
       </footer>
 
-      {/* MODAL DE CAPTACIÓN DE LEAD */}
+      {/* MODAL DE RESERVA DE VACANTE */}
       {showLeadModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-janm-surface border border-janm-borderGold rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in zoom-in-95">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-janm-gold" />
+          <div className="bg-[#0E1526] border border-amber-500/40 rounded-3xl max-w-md w-full p-6 shadow-2xl animate-in zoom-in-95 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-base font-black text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400" />
                 Reserva de Vacante / Asesoría
               </h3>
               <button
                 onClick={() => setShowLeadModal(false)}
-                className="text-zinc-400 hover:text-white text-sm"
+                className="text-slate-400 hover:text-white text-sm"
               >
                 ✕
               </button>
@@ -345,64 +341,57 @@ export default function ChatPage() {
             {leadSuccess ? (
               <div className="text-center py-6">
                 <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3 animate-bounce" />
-                <h4 className="text-white font-bold text-base">¡Datos Recibidos!</h4>
-                <p className="text-xs text-zinc-400 mt-1">Un coordinador te contactará a la brevedad.</p>
+                <h4 className="text-white font-black text-base">¡Datos Recibidos con Éxito!</h4>
+                <p className="text-xs text-slate-300 mt-1">Una asesora oficial te contactará a la brevedad.</p>
               </div>
             ) : (
-              <form onSubmit={handleLeadSubmit} className="space-y-4">
+              <form onSubmit={handleLeadSubmit} className="space-y-3">
+                <p className="text-xs text-slate-300">
+                  Déjanos tus datos para enviarte los horarios oficiales y asegurar tu vacante:
+                </p>
+
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">Nombre Completo *</label>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">Nombre Completo:</label>
                   <input
                     type="text"
                     required
                     value={leadForm.fullName}
                     onChange={e => setLeadForm({ ...leadForm, fullName: e.target.value })}
-                    placeholder="Ej. Juan Pérez"
-                    className="w-full bg-janm-dark border border-janm-border rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
+                    placeholder="Ej: Melissa Pérez"
+                    className="w-full bg-[#080B14] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">Teléfono WhatsApp (9 dígitos) *</label>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">WhatsApp (9 dígitos):</label>
                   <input
                     type="tel"
                     required
                     value={leadForm.phone}
                     onChange={e => setLeadForm({ ...leadForm, phone: e.target.value })}
-                    placeholder="Ej. 984512345"
-                    className="w-full bg-janm-dark border border-janm-border rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
+                    placeholder="Ej: 953711857"
+                    className="w-full bg-[#080B14] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">Correo Electrónico (Opcional)</label>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">Programa de Interés (Opcional):</label>
                   <input
-                    type="email"
-                    value={leadForm.email}
-                    onChange={e => setLeadForm({ ...leadForm, email: e.target.value })}
-                    placeholder="juan.perez@gmail.com"
-                    className="w-full bg-janm-dark border border-janm-border rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
+                    type="text"
+                    value={leadForm.courseName}
+                    onChange={e => setLeadForm({ ...leadForm, courseName: e.target.value })}
+                    placeholder="Ej: Oratoria y Liderazgo de Alto Impacto"
+                    className="w-full bg-[#080B14] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
-                <div className="p-2.5 rounded bg-janm-dark/60 text-[11px] text-zinc-400 leading-snug">
-                  🛡️ Sus datos están protegidos conforme a la Ley N° 29733 de Perú. No compartimos su número con terceros.
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowLeadModal(false)}
-                    className="px-4 py-2 text-xs text-zinc-400 hover:text-white"
-                  >
-                    Cancelar
-                  </button>
+                <div className="pt-2">
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-black text-xs hover:brightness-110 shadow-md cursor-pointer"
                   >
-                    Confirmar Envío
+                    Confirmar Reserva con Asesora
                   </button>
                 </div>
               </form>
@@ -411,32 +400,29 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* MODAL DE POLÍTICA DE PRIVACIDAD */}
+      {/* MODAL DE PRIVACIDAD */}
       {showPrivacyModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-janm-surface border border-janm-borderGold rounded-2xl max-w-lg w-full p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Shield className="w-4 h-4 text-janm-gold" />
-                Aviso de Privacidad y Derechos ARCO (Perú)
+          <div className="bg-[#0E1526] border border-amber-500/40 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <Shield className="w-4 h-4 text-amber-400" />
+                Aviso de Privacidad Oficial (Ley N° 29733)
               </h3>
               <button
                 onClick={() => setShowPrivacyModal(false)}
-                className="text-zinc-400 hover:text-white text-sm"
+                className="text-slate-400 hover:text-white"
               >
                 ✕
               </button>
             </div>
-            <div className="text-xs text-zinc-300 space-y-3 leading-relaxed">
-              <p>{PRIVACY_POLICY_NOTICE}</p>
-              <p>
-                <strong>Derechos ARCO:</strong> En cualquier momento usted puede ejercer sus derechos de Acceso, Rectificación, Cancelación y Oposición. Para solicitar su baja inmediata de comunicaciones promocionales, puede escribir en este chat la palabra <code>BAJA</code>.
-              </p>
-            </div>
-            <div className="mt-6 flex justify-end">
+            <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line font-sans">
+              {PRIVACY_POLICY_NOTICE}
+            </p>
+            <div className="text-right">
               <button
                 onClick={() => setShowPrivacyModal(false)}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-amber-400 text-black font-bold text-xs"
               >
                 Entendido
               </button>

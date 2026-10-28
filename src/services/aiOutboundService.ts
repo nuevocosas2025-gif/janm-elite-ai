@@ -1,6 +1,8 @@
 /**
  * ORATORIA JANM ELITE - SERVICIO DE MENSAJERÍA AUTOMÁTICA SEGÚN ESTADO DE VENTA
- * Adaptado a la estructura real de la hoja: NOMBRES, RESPONSABLE, NUMERO, ESTADO DE VENTA, DESCRIPCION.
+ * Mensajes redactados con alta persuasión comercial, sin asteriscos (*) y con iconos llamativos.
+ * Conectado con las cabeceras reales de la hoja CRM3 EVA:
+ * PB/L, NOMBRES, RESPONSABLE, NUMERO, ESTADO DE VENTA, DESCRIPCION
  */
 
 import { normalizePhone } from '@/lib/security';
@@ -20,7 +22,8 @@ export interface EvaSheetContact {
 
 export const aiOutboundService = {
   /**
-   * Genera el mensaje según el ESTADO DE VENTA exacto de la hoja de cálculo
+   * Genera el mensaje según el ESTADO DE VENTA exacto de la hoja de cálculo.
+   * CERO ASTERISCOS (*) para cumplir con la indicación del usuario y con emojis llamativos.
    */
   generateMessageBySalesState(contact: {
     nombres: string;
@@ -28,32 +31,35 @@ export const aiOutboundService = {
     estadoVenta: string;
     descripcion?: string;
   }): string {
-    const nombreLimpio = contact.nombres.trim();
-    const saludoNombre = nombreLimpio ? `¡Hola ${nombreLimpio.split(' ')[0]}!` : '¡Hola!';
+    const rawName = (contact.nombres || '').trim();
+    const hasRealName = rawName.length > 0 && !rawName.toLowerCase().startsWith('contacto general');
+    const firstName = hasRealName ? rawName.split(' ')[0] : '';
+    const saludoNombre = firstName ? `¡Hola ${firstName}!` : '¡Hola!';
     const asesor = contact.responsable || 'Eva Rinza';
     const estado = (contact.estadoVenta || '').toUpperCase();
 
-    // 1. Prospectos con estado 'PERDIDO' (Estrategia: Reactivación con Tarifa Especial)
+    // 1. Prospectos con estado 'PERDIDO' (Reactivación con Tarifa Especial y Beneficio Exclusivo)
     if (estado.includes('PERDIDO')) {
-      return `${saludoNombre} 👋 Te saluda ${asesor} de la Academia *ORATORIA JANM ELITE*. Te escribo porque anteriormente mostraste interés en vencer el miedo escénico y hablar con poder en público. 🏆\n\nSabemos que por tiempo o motivos personales no pudiste iniciar, pero este mes abrimos un *grupo intensivo con una tarifa preferencial exclusiva*. ¿Te gustaría que te comparta los nuevos horarios de sábados?`;
+      return `${saludoNombre} 👋 Te saluda ${asesor} de la Academia ORATORIA JANM ELITE 🌟\n\nTe escribo porque anteriormente mostraste interés en vencer el miedo escénico y aprender a hablar con total seguridad y liderazgo ante cualquier público 🎤🏆\n\nSabemos que por tiempo o motivos personales no pudiste iniciar, pero este mes abrimos un grupo intensivo exclusivo con una tarifa preferencial especial ✨\n\n¿Te gustaría que te comparta los nuevos horarios de sábados y los beneficios de este ciclo? 📅🚀`;
     }
 
-    // 2. Prospectos con estado 'NO RESPONDE' (Estrategia: Seguimiento Asertivo de Bajo Compromiso)
+    // 2. Prospectos con estado 'NO RESPONDE' (Seguimiento Asertivo, Amable y de Bajo Compromiso)
     if (estado.includes('NO RESPO') || estado.includes('NO CONTESTA')) {
-      return `${saludoNombre} 👋 Un cordial saludo de parte de ${asesor} en *ORATORIA JANM ELITE*. Me comunico brevemente contigo para confirmar si aún estás evaluando capacitarte en oratoria y liderazgo este mes. Tenemos vacantes limitadas en modalidad presencial y virtual. ¿Deseas que te reserve una vacante informativa sin compromiso?`;
+      return `${saludoNombre} 👋 Un cordial saludo de parte de ${asesor} en ORATORIA JANM ELITE 🌟\n\nMe comunico brevemente contigo para confirmar si aún estás evaluando capacitarte en oratoria y liderazgo este mes 🎤✨\n\nTenemos pocas vacantes disponibles en nuestras modalidades presencial y virtual con práctica real y personalizada 🏆\n\n¿Deseas que te reserve una vacante informativa sin ningún compromiso? 💬📅`;
     }
 
-    // 3. Clientes con estado 'CERRADO' (Estrategia: Fidelización y Confirmación de Inicio)
+    // 3. Clientes con estado 'CERRADO' (Fidelización, Bienvenida y Confirmación de Inicio)
     if (estado.includes('CERRADO') || estado.includes('MATRICULADO')) {
-      return `Estimado/a ${nombreLimpio || 'Alumno/a'}, ¡un saludo de la Academia *ORATORIA JANM ELITE*! 🎓 Confirmamos que tu proceso de matrícula ha sido gestionado con éxito junto a tu asesora ${asesor}. Estamos listos para recibirte en el salón con atriles y micrófono en mano para iniciar tu transformación oratoria. ¿Tienes alguna consulta sobre la primera clase?`;
+      const recipient = hasRealName ? rawName : 'futuro/a líder';
+      return `¡Estimado/a ${recipient}! 🎓👏 Te saluda con entusiasmo el equipo de ORATORIA JANM ELITE junto a tu asesora ${asesor} 🌟\n\nConfirmamos con alegría que tu matrícula está registrada y tu vacante asegurada para este ciclo 🏆✨\n\nEstamos preparando tu atril y micrófonos para iniciar tus prácticas reales desde la primera sesión 🎤🔥\n\n¿Tienes alguna duda sobre la hora de llegada o los materiales de tu primera clase? 💬`;
     }
 
     // 4. Prospecto 'NUEVO' o General
-    return `${saludoNombre} 👋 Te saluda ${asesor} de la Academia *ORATORIA JANM ELITE*. Vimos tu registro de interés en nuestros programas oficiales de oratoria para adultos y jóvenes. 🌟 ¿Te gustaría conocer los horarios de este fin de semana y la certificación oficial con valor curricular?`;
+    return `${saludoNombre} 👋 Te saluda ${asesor} de la Academia ORATORIA JANM ELITE 🌟\n\nVimos tu interés en nuestros programas oficiales de oratoria y desarrollo de liderazgo para jóvenes y adultos 🎤✨\n\nNuestras clases son 100% prácticas e incluyen certificación oficial con valor curricular 🏆🥇\n\n¿Te gustaría conocer las promociones de este fin de semana y los horarios disponibles? 📅💬`;
   },
 
   /**
-   * Prepara la lista completa de contactos enriquecida
+   * Prepara la lista completa de contactos enriquecida con URL oficial de WhatsApp
    */
   prepareEvaCampaign(contacts: {
     id: string;
