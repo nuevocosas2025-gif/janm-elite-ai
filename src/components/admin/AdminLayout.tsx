@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Sparkles,
+  Send,
   ExternalLink
 } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -53,6 +54,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Envío WhatsApp con IA', href: '/admin/outbound', icon: Send },
     { label: 'Contactos', href: '/admin/contacts', icon: Users },
     { label: 'CRM Prospectos', href: '/admin/prospects', icon: Target },
     { label: 'Conversaciones', href: '/admin/conversations', icon: MessageSquare },

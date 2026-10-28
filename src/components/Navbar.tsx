@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, MessageSquare, ShieldCheck, User } from 'lucide-react';
+import { Sparkles, MessageSquare, ShieldCheck, User, Send } from 'lucide-react';
 
 export function Navbar() {
   return (
@@ -34,6 +34,10 @@ export function Navbar() {
           <Link href="/chat" className="hover:text-janm-gold transition-colors flex items-center gap-1.5 text-amber-300">
             <Sparkles className="w-4 h-4 text-janm-gold" />
             Asistente IA
+          </Link>
+          <Link href="/admin/outbound" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5 text-emerald-300">
+            <Send className="w-4 h-4 text-emerald-400" />
+            Envío WhatsApp IA
           </Link>
         </nav>
 
