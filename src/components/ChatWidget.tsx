@@ -103,7 +103,7 @@ export function ChatWidget() {
           <div className="relative">
             <Sparkles className="w-5 h-5 text-black animate-pulse" />
           </div>
-          <span className="text-sm font-semibold">¿Dudas? Chatea con JANM AI</span>
+          <span className="text-xs font-semibold">¿Dudas? Consultas en Línea (24/7)</span>
         </button>
       ) : (
         <div className="w-[360px] sm:w-[400px] h-[550px] bg-janm-surface border border-janm-borderGold rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5">
@@ -115,10 +115,10 @@ export function ChatWidget() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-                  JANM ELITE AI
+                  ATENCIÓN VIRTUAL JANM ELITE
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                 </h4>
-                <p className="text-[11px] text-zinc-400">Atención oficial 24/7</p>
+                <p className="text-[11px] text-zinc-400">Canal Institucional Oficial</p>
               </div>
             </div>
             <div className="flex items-center gap-1">

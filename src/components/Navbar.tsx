@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, MessageSquare, ShieldCheck, User, Send } from 'lucide-react';
+import { MessageSquare, ShieldCheck, User, Send, Compass } from 'lucide-react';
 
 export function Navbar() {
   return (
@@ -21,23 +21,23 @@ export function Navbar() {
           </div>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm text-zinc-300">
+        <nav className="hidden md:flex items-center gap-6 text-xs sm:text-sm text-zinc-300">
           <Link href="#cursos" className="hover:text-janm-gold transition-colors">
-            Cursos y Programas
+            Programas Académicos
           </Link>
           <Link href="#metodologia" className="hover:text-janm-gold transition-colors">
-            Metodología
+            Metodología Vivencial
           </Link>
           <Link href="#certificacion" className="hover:text-janm-gold transition-colors">
             Certificación
           </Link>
-          <Link href="/chat" className="hover:text-janm-gold transition-colors flex items-center gap-1.5 text-amber-300">
-            <Sparkles className="w-4 h-4 text-janm-gold" />
-            Asistente IA
+          <Link href="/chat" className="hover:text-amber-300 transition-colors flex items-center gap-1.5 text-zinc-300">
+            <MessageSquare className="w-4 h-4 text-janm-gold" />
+            Canal de Consultas
           </Link>
-          <Link href="/admin/outbound" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5 text-emerald-300">
-            <Send className="w-4 h-4 text-emerald-400" />
-            Envío WhatsApp IA
+          <Link href="/admin/outbound" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5 text-zinc-300">
+            <Send className="w-3.5 h-3.5 text-emerald-400" />
+            Módulo Prospección
           </Link>
         </nav>
 
@@ -47,14 +47,14 @@ export function Navbar() {
             className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-black px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm hover:brightness-110 shadow-gold-sm transition-all"
           >
             <MessageSquare className="w-4 h-4" />
-            <span>Chatear Ahora</span>
+            <span>Consultar en Línea</span>
           </Link>
           <Link
             href="/login"
             className="flex items-center gap-1.5 border border-janm-border/80 text-zinc-300 px-3 py-2 rounded-lg text-xs sm:text-sm hover:bg-janm-surfaceLight hover:text-white transition-all"
           >
             <User className="w-4 h-4 text-janm-gold" />
-            <span className="hidden sm:inline">Acceso Asesores</span>
+            <span className="hidden sm:inline">Consola de Gestión</span>
           </Link>
         </div>
       </div>
