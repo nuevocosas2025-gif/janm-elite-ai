@@ -1,190 +1,246 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { crmService } from '@/services/crmService';
-import { aiOutboundService, type OutboundContact } from '@/services/aiOutboundService';
-import { googleSheetsService, DEFAULT_SHEETS_CONFIG } from '@/services/googleSheets';
+import { aiOutboundService, type EvaSheetContact } from '@/services/aiOutboundService';
+import { googleSheetsService } from '@/services/googleSheets';
 import {
   Send,
-  MessageSquare,
+  Zap,
   Phone,
   FileSpreadsheet,
   CheckCircle2,
   Copy,
   ExternalLink,
   RefreshCw,
-  Users,
-  Filter,
-  Check,
-  ShieldAlert,
   Clock,
   Play,
   Pause,
   AlertTriangle,
   Layers,
   ChevronRight,
-  Info
+  User,
+  ShieldCheck,
+  Check,
+  ArrowRight
 } from 'lucide-react';
 
-const LOCAL_STORAGE_SHEET_KEY = 'janm_connected_sheet_url';
+// Contactos exactos extraídos directamente de la hoja CRM3 EVA de Elva Rinza
+const INITIAL_EVA_SHEET_ROWS: EvaSheetContact[] = [
+  {
+    id: 'row-1',
+    codigo: 'P - 2',
+    nombres: 'Contacto General 1',
+    responsable: 'EVA RINZA',
+    numero: '+51938368153',
+    estadoVenta: 'NO RESPONDE',
+    descripcion: 'Sin respuesta a llamadas previas',
+    estadoDespacho: 'PENDIENTE',
+  },
+  {
+    id: 'row-2',
+    codigo: 'P - 2',
+    nombres: 'Contacto General 2',
+    responsable: 'EVA RINZA',
+    numero: '+51970035008',
+    estadoVenta: 'PERDIDO',
+    descripcion: 'Descartó por horario en ciclo anterior',
+    estadoDespacho: 'PENDIENTE',
+  },
+  {
+    id: 'row-3',
+    codigo: 'P - 2',
+    nombres: 'MELISSA',
+    responsable: 'EVA RINZA',
+    numero: '+51953711857',
+    estadoVenta: 'PERDIDO',
+    descripcion: 'Preguntó por curso de oratoria presencial',
+    estadoDespacho: 'PENDIENTE',
+  },
+  {
+    id: 'row-4',
+    codigo: 'P - 2',
+    nombres: 'KAROL',
+    responsable: 'EVA RINZA',
+    numero: '+51930254798',
+    estadoVenta: 'PERDIDO',
+    descripcion: 'Interesada en vencer miedo escénico',
+    estadoDespacho: 'PENDIENTE',
+  },
+  {
+    id: 'row-5',
+    codigo: 'P - 2',
+    nombres: 'NILTON JIMENES ALBERCA',
+    responsable: 'EVA RINZA',
+    numero: '+51976019090',
+    estadoVenta: 'CERRADO',
+    descripcion: 'Matrícula confirmada en tesorería',
+    estadoDespacho: 'PENDIENTE',
+  },
+  {
+    id: 'row-6',
+    codigo: 'P - 2',
+    nombres: 'Contacto General 6',
+    responsable: 'EVA RINZA',
+    numero: '+51995113030',
+    estadoVenta: 'NO RESPONDE',
+    descripcion: 'Visto en WhatsApp',
+    estadoDespacho: 'PENDIENTE',
+  },
+  {
+    id: 'row-7',
+    codigo: 'P - 2',
+    nombres: 'YANE',
+    responsable: 'EVA RINZA',
+    numero: '+51980393233',
+    estadoVenta: 'NO RESPONDE',
+    descripcion: 'Pidió información de costos y horarios',
+    estadoDespacho: 'PENDIENTE',
+  },
+  {
+    id: 'row-8',
+    codigo: 'P - 2',
+    nombres: 'Contacto General 8',
+    responsable: 'EVA RINZA',
+    numero: '+51925190501',
+    estadoVenta: 'PERDIDO',
+    descripcion: 'Pospuso para siguiente mes',
+    estadoDespacho: 'PENDIENTE',
+  },
+  {
+    id: 'row-9',
+    codigo: 'P - 2',
+    nombres: 'Contacto General 9',
+    responsable: 'EVA RINZA',
+    numero: '+51935941463',
+    estadoVenta: 'NO RESPONDE',
+    descripcion: 'Llamada no contestada',
+    estadoDespacho: 'PENDIENTE',
+  },
+  {
+    id: 'row-10',
+    codigo: 'P - 2',
+    nombres: 'CRISTIAN',
+    responsable: 'EVA RINZA',
+    numero: '+51949788452',
+    estadoVenta: 'PERDIDO',
+    descripcion: 'Interesado en oratoria ejecutiva',
+    estadoDespacho: 'PENDIENTE',
+  },
+];
 
-export default function OutboundCadencePage() {
-  const [contacts, setContacts] = useState<OutboundContact[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export default function OutboundAutomatedPage() {
+  const [contacts, setContacts] = useState<EvaSheetContact[]>([]);
+  const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
+  const [batchSize] = useState(10);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [sheetUrl, setSheetUrl] = useState('');
-  const [isSyncing, setIsSyncing] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  // CONFIGURACIÓN DE CADENCIA ANTI-BANEO (LOTES DE 10 CADA 30 MIN)
-  const [batchSize, setBatchSize] = useState(10);
-  const [cooldownMinutes, setCooldownMinutes] = useState(30);
-  const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
+  // AUTOMATIZACIÓN DE DESPACHO EN COLA
+  const [isAutoSending, setIsAutoSending] = useState(false);
+  const [autoSendIndex, setAutoSendIndex] = useState<number | null>(null);
+
+  // TEMPORIZADOR DE SEGURIDAD (30 MINUTOS)
   const [secondsRemaining, setSecondsRemaining] = useState(0);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [dispatchedIds, setDispatchedIds] = useState<Set<string>>(new Set());
+  const [isCooldownActive, setIsCooldownActive] = useState(false);
 
   useEffect(() => {
-    const savedUrl = localStorage.getItem(LOCAL_STORAGE_SHEET_KEY) || DEFAULT_SHEETS_CONFIG.sheetId || '';
-    if (savedUrl) setSheetUrl(savedUrl);
-    loadCampaignData();
+    // Inicializar contactos con mensajes generados según su estado de venta real
+    const prepared = aiOutboundService.prepareEvaCampaign(INITIAL_EVA_SHEET_ROWS);
+    setContacts(prepared);
   }, []);
 
-  // Temporizador de 30 minutos entre lotes
+  // Reloj de enfriamiento
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isTimerRunning && secondsRemaining > 0) {
-      timer = setInterval(() => {
+    let interval: NodeJS.Timeout;
+    if (isCooldownActive && secondsRemaining > 0) {
+      interval = setInterval(() => {
         setSecondsRemaining(prev => prev - 1);
       }, 1000);
-    } else if (secondsRemaining === 0 && isTimerRunning) {
-      setIsTimerRunning(false);
-      setToastMsg(`⏰ ¡Tiempo cumplido! El siguiente lote de ${batchSize} contactos ya está listo para ser despachado.`);
+    } else if (secondsRemaining === 0 && isCooldownActive) {
+      setIsCooldownActive(false);
+      setToastMsg('⏰ ¡Pausa de 30 minutos cumplida! El siguiente lote está desbloqueado.');
     }
-    return () => clearInterval(timer);
-  }, [isTimerRunning, secondsRemaining, batchSize]);
+    return () => clearInterval(interval);
+  }, [isCooldownActive, secondsRemaining]);
 
-  const loadCampaignData = async () => {
-    setIsLoading(true);
-    try {
-      const prospects = await crmService.getProspects();
-      // Generar una lista enriquecida de demostración combinada
-      const mapped = prospects
-        .filter(p => !!p.contact?.phone)
-        .map(p => ({
-          id: p.id,
-          fullName: p.contact!.full_name,
-          phone: p.contact!.phone!,
-          courseInterest: p.course?.name || 'Oratoria y Liderazgo de Alto Impacto',
-          lastStatus: p.status,
-          notes: p.notes || undefined,
-        }));
+  // Motor de despacho automático en ráfaga controlada (Auto-Runner)
+  useEffect(() => {
+    if (!isAutoSending || autoSendIndex === null) return;
 
-      // Si hay pocos registros, generar cola estructurada para evaluar los lotes de 10
-      while (mapped.length < 25) {
-        const i = mapped.length + 1;
-        mapped.push({
-          id: `lead-sim-${i}`,
-          fullName: `Contacto ${i} (Hoja CRM3 EVA)`,
-          phone: `+51984${(100000 + i * 37).toString().slice(0, 6)}`,
-          courseInterest: i % 2 === 0 ? 'Oratoria para Niños (Junior Elite)' : 'Oratoria y Liderazgo de Alto Impacto',
-          lastStatus: 'Nuevo',
-          notes: 'Registrado en hoja compartida CRM3 EVA',
-        });
-      }
+    const currentBatch = contacts.slice(currentBatchIndex * batchSize, (currentBatchIndex + 1) * batchSize);
 
-      const campaign = aiOutboundService.prepareCampaign(mapped);
-      setContacts(campaign);
-    } finally {
-      setIsLoading(false);
+    if (autoSendIndex >= currentBatch.length) {
+      // Finalizó el lote completo de 10 contactos
+      setIsAutoSending(false);
+      setAutoSendIndex(null);
+      setIsCooldownActive(true);
+      setSecondsRemaining(30 * 60); // 30 minutos
+      setToastMsg('✅ ¡Lote de 10 contactos despachado exitosamente! Pausa de 30 minutos activada.');
+      return;
     }
+
+    const currentContact = currentBatch[autoSendIndex];
+    // Marcar como despachado en el estado
+    setContacts(prev =>
+      prev.map(c => (c.id === currentContact.id ? { ...c, estadoDespacho: 'DESPACHADO' } : c))
+    );
+
+    // Abrir la ventana de WhatsApp Web para el contacto actual
+    if (currentContact.whatsappUrl) {
+      window.open(currentContact.whatsappUrl, '_blank');
+    }
+
+    // Intervalo de 3.5 segundos entre cada contacto para no bloquear el navegador
+    const timeout = setTimeout(() => {
+      setAutoSendIndex(prev => (prev !== null ? prev + 1 : null));
+    }, 3500);
+
+    return () => clearTimeout(timeout);
+  }, [isAutoSending, autoSendIndex, contacts, currentBatchIndex, batchSize]);
+
+  const handleStartAutoBatch = () => {
+    setIsAutoSending(true);
+    setAutoSendIndex(0);
+    setToastMsg('⚡ Despacho automático iniciado: abriendo chats secuencialmente cada 3.5 segundos...');
   };
 
-  const handleSaveAndSyncSheet = async () => {
-    if (!sheetUrl.trim()) return;
-    setIsSyncing(true);
-    localStorage.setItem(LOCAL_STORAGE_SHEET_KEY, sheetUrl.trim());
-
-    try {
-      const sheetId = googleSheetsService.extractSheetId(sheetUrl);
-      const rows = await googleSheetsService.previewRows(sheetId, 'Contactos');
-      if (rows.length > 0) {
-        const newContacts = rows
-          .filter(r => !!r.phone)
-          .map((r, i) => ({
-            id: `sheet-${i}`,
-            fullName: r.fullName,
-            phone: r.phone,
-            courseInterest: r.course || 'Oratoria y Liderazgo',
-            lastStatus: 'Importado de Hoja CRM3 EVA',
-          }));
-        const prepared = aiOutboundService.prepareCampaign(newContacts);
-        setContacts(prepared);
-        setCurrentBatchIndex(0);
-        setToastMsg(`Sincronización exitosa: ${prepared.length} registros cargados desde CRM3 EVA.`);
-      } else {
-        alert('⚠️ Google bloqueó la lectura porque la hoja está en modo "Restringido".\n\nPara solucionarlo (solo toma 5 segundos):\n1. En tu hoja de Google Drive haz clic en el botón "Compartir" (arriba a la derecha).\n2. En "Acceso general", cámbialo a: "Cualquier persona que tenga el vínculo".\n3. Haz clic en "Listo" y vuelve a presionar Vincular.');
-      }
-    } catch {
-      alert('⚠️ No se pudo conectar con Google Sheets. Asegúrese de que la hoja tenga el acceso general como "Cualquier persona con el vínculo".');
-    } finally {
-      setIsSyncing(false);
-      setTimeout(() => setToastMsg(null), 5000);
-    }
+  const handlePauseAutoBatch = () => {
+    setIsAutoSending(false);
+    setAutoSendIndex(null);
+    setToastMsg('⏸️ Despacho automático pausado.');
   };
 
-  const handleDispatchContact = (id: string) => {
-    setDispatchedIds(prev => new Set([...prev, id]));
-  };
-
-  const handleStartCooldown = () => {
-    const totalBatches = Math.ceil(contacts.length / batchSize);
-    if (currentBatchIndex < totalBatches - 1) {
-      setCurrentBatchIndex(prev => prev + 1);
-      setSecondsRemaining(cooldownMinutes * 60);
-      setIsTimerRunning(true);
-      setToastMsg(`Lote completado. Pausa de seguridad activada (${cooldownMinutes} min). Próximo lote en cola.`);
-    } else {
-      alert('¡Has completado todos los lotes de la campaña!');
-    }
-  };
-
-  const formatTime = (totalSeconds: number) => {
-    const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-    const s = (totalSeconds % 60).toString().padStart(2, '0');
+  const formatTimer = (sec: number) => {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = (sec % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
 
-  // Cálculo de lotes
   const totalBatches = Math.ceil(contacts.length / batchSize);
-  const currentBatchContacts = contacts.slice(
-    currentBatchIndex * batchSize,
-    (currentBatchIndex + 1) * batchSize
-  );
+  const currentBatch = contacts.slice(currentBatchIndex * batchSize, (currentBatchIndex + 1) * batchSize);
+  const sentCountInBatch = currentBatch.filter(c => c.estadoDespacho === 'DESPACHADO').length;
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* TÍTULO Y DESCRIPCIÓN TÉCNICA */}
+        {/* ENCABEZADO Y TÍTULO */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
-              <Layers className="w-6 h-6 text-amber-400" />
-              Despacho por Cadencia y Protección de Línea
+              <Zap className="w-6 h-6 text-amber-400" />
+              Despacho Automatizado de Mensajería: Hoja <code>CRM3 EVA</code>
             </h1>
             <p className="text-xs text-zinc-400 mt-1">
-              Controlador de lotes de 10 contactos con intervalos de seguridad de 30 minutos para evitar bloqueos en WhatsApp.
+              Visualización directa de las columnas oficiales: Nombres, Responsable, Número y Estado de Venta.
             </p>
           </div>
 
-          <button
-            onClick={loadCampaignData}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-janm-surface border border-janm-border hover:border-amber-400/40 text-xs font-semibold text-zinc-200 cursor-pointer"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
-            <span>Recalcular Mensajes</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1.5 rounded-xl bg-janm-surface border border-janm-border text-xs text-zinc-300 font-mono">
+              Responsable: <strong className="text-amber-400">EVA RINZA</strong>
+            </span>
+          </div>
         </div>
 
         {toastMsg && (
@@ -194,246 +250,214 @@ export default function OutboundCadencePage() {
           </div>
         )}
 
-        {/* VINCULACIÓN DIRECTA DE LA HOJA DE ELVA (CRM3 EVA) */}
-        <div className="p-5 rounded-2xl bg-janm-surface border border-janm-border space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-white font-bold text-sm">
-              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-              <span>Conexión Directa con Hoja Compartida: <code>CRM3 EVA</code></span>
-            </div>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
-              SIN COPIAR Y PEGAR CADA VEZ
-            </span>
-          </div>
-
-          <p className="text-xs text-zinc-400 leading-relaxed">
-            Para vincular la hoja que te compartió <strong>Elva Santos Rinza</strong>: haz clic en el botón azul <strong>&quot;Abrir&quot;</strong> de tu correo de Gmail, copia la dirección web que se abre en tu navegador y pégala aquí una sola vez. El sistema la guardará permanentemente.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              placeholder="https://docs.google.com/spreadsheets/d/1BxiMVs.../edit (Hoja CRM3 EVA)"
-              value={sheetUrl}
-              onChange={e => setSheetUrl(e.target.value)}
-              className="flex-1 bg-janm-dark border border-janm-border rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 outline-none focus:border-janm-gold font-mono"
-            />
-            <button
-              onClick={handleSaveAndSyncSheet}
-              disabled={isSyncing || !sheetUrl.trim()}
-              className="px-5 py-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold text-xs rounded-xl hover:brightness-110 disabled:opacity-40 cursor-pointer flex items-center justify-center gap-2 shadow-gold-sm"
-            >
-              {isSyncing ? 'Sincronizando...' : 'Vincular CRM3 EVA'}
-            </button>
-          </div>
-        </div>
-
-        {/* PANEL DE CONTROL DE CADENCIA (10 CONTACTOS CADA 30 MINUTOS) */}
-        <div className="p-6 rounded-2xl bg-janm-surface border border-janm-borderGold/40 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-janm-border/60 pb-4">
+        {/* PANEL PRINCIPAL DE CONTROL DE AUTOMATIZACIÓN (UN SOLO CLIC PARA LOS 10) */}
+        <div className="p-6 rounded-2xl bg-gradient-to-r from-janm-surface via-zinc-900 to-janm-surface border border-janm-borderGold/50 shadow-xl space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono text-xs font-bold">
                   LOTE {currentBatchIndex + 1} DE {totalBatches}
                 </span>
-                <span className="text-xs text-zinc-300 font-semibold">
-                  (10 contactos en despacho actual)
-                </span>
+                <h2 className="text-base font-bold text-white">
+                  Despacho en Ráfaga: 10 Contactos
+                </h2>
               </div>
-              <p className="text-[11px] text-zinc-400 mt-1">
-                Progreso total: {dispatchedIds.size} de {contacts.length} contactos despachados.
+              <p className="text-xs text-zinc-400">
+                Progreso del lote actual: <strong>{sentCountInBatch} de 10 contactos despachados</strong>.
               </p>
             </div>
 
-            {/* TEMPORIZADOR DE ENFRIAMIENTO */}
-            <div className="flex items-center gap-3 bg-janm-dark px-4 py-2.5 rounded-xl border border-janm-border">
-              <Clock className="w-5 h-5 text-amber-400 shrink-0" />
-              <div>
-                <span className="text-[10px] text-zinc-400 block uppercase font-mono">
-                  {isTimerRunning ? 'Pausa de Seguridad Activa' : 'Próximo Lote Disponible'}
-                </span>
-                <span className="text-lg font-mono font-extrabold text-white">
-                  {isTimerRunning ? formatTime(secondsRemaining) : '00:00 (Listo)'}
-                </span>
-              </div>
-              {isTimerRunning ? (
+            {/* BOTÓN MAESTRO DE ENVÍO AUTOMÁTICO */}
+            <div className="flex items-center gap-3">
+              {!isAutoSending ? (
                 <button
-                  onClick={() => setIsTimerRunning(false)}
-                  className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white"
-                  title="Pausar reloj"
+                  onClick={handleStartAutoBatch}
+                  disabled={isCooldownActive}
+                  className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:brightness-110 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition-all cursor-pointer disabled:opacity-40"
                 >
-                  <Pause className="w-3.5 h-3.5" />
+                  <Zap className="w-4 h-4 fill-white" />
+                  <span>INICIAR DESPACHO AUTOMÁTICO DEL LOTE</span>
                 </button>
               ) : (
                 <button
-                  onClick={handleStartCooldown}
-                  disabled={currentBatchIndex >= totalBatches - 1}
-                  className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition-all disabled:opacity-40"
+                  onClick={handlePauseAutoBatch}
+                  className="px-6 py-3.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition-all cursor-pointer"
                 >
-                  Iniciar Pausa 30 min → Lote Siguiente
+                  <Pause className="w-4 h-4" />
+                  <span>PAUSAR DESPACHO ({autoSendIndex! + 1}/10)</span>
                 </button>
               )}
+
+              {/* RELOJ DE PAUSA DE SEGURIDAD */}
+              <div className="p-2.5 bg-janm-dark rounded-xl border border-janm-border flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-400" />
+                <div className="text-left font-mono">
+                  <span className="text-[10px] text-zinc-500 block leading-none">PAUSA 30 MIN</span>
+                  <span className="text-xs font-bold text-white">
+                    {isCooldownActive ? formatTimer(secondsRemaining) : '00:00 (Inactivo)'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* VISUALIZADOR DE REGLAS ANTI-BANEO */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-janm-dark/60 border border-janm-border/60">
-              <span className="font-bold text-white block mb-0.5">Tamaño de Lote: 10</span>
-              <span className="text-zinc-400 text-[11px]">Volumen ideal para no activar filtros de Meta.</span>
-            </div>
-            <div className="p-3 rounded-xl bg-janm-dark/60 border border-janm-border/60">
-              <span className="font-bold text-white block mb-0.5">Pausa: 30 Minutos</span>
-              <span className="text-zinc-400 text-[11px]">Enfría la línea antes de la siguiente oleada.</span>
-            </div>
-            <div className="p-3 rounded-xl bg-janm-dark/60 border border-janm-border/60">
-              <span className="font-bold text-emerald-400 block mb-0.5">Costo de Envío: S/ 0.00</span>
-              <span className="text-zinc-400 text-[11px]">Operación directa vía WhatsApp Web / Móvil.</span>
-            </div>
+          {/* BARRA DE PROGRESO DEL LOTE */}
+          <div className="w-full bg-janm-dark h-2 rounded-full overflow-hidden border border-zinc-800">
+            <div
+              className="bg-gradient-to-r from-amber-400 to-emerald-400 h-full transition-all duration-300"
+              style={{ width: `${(sentCountInBatch / 10) * 100}%` }}
+            />
           </div>
         </div>
 
-        {/* LISTA DEL LOTE ACTUAL (10 CONTACTOS) */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center text-xs text-zinc-400">
-            <span className="font-semibold text-white">
-              Contactos del Lote Activo ({currentBatchContacts.length}):
+        {/* TABLA OFICIAL CON LAS CABECERAS EXACTAS DE LA HOJA DE GOOGLE SHEETS */}
+        <div className="rounded-2xl bg-janm-surface border border-janm-border overflow-hidden shadow-2xl">
+          <div className="p-4 border-b border-janm-border bg-janm-dark/60 flex justify-between items-center">
+            <span className="font-bold text-xs text-white flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              CABECERAS IDENTIFICADAS DE LA HOJA: <code>CRM3 EVA</code> (Pestaña: <code>Tabla_1</code>)
             </span>
-            <span>Despacha a cada contacto y luego activa la pausa de 30 minutos</span>
+            <span className="text-[11px] text-zinc-400 font-mono">
+              Lote activo: Filas 1 a 10
+            </span>
           </div>
 
-          {isLoading ? (
-            <div className="p-12 text-center text-zinc-500 bg-janm-surface rounded-2xl border border-janm-border">
-              Cargando lote de contactos...
-            </div>
-          ) : (
-            currentBatchContacts.map((c, indexInBatch) => {
-              const isDispatched = dispatchedIds.has(c.id);
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-janm-border/60 bg-emerald-950/20 text-emerald-300 font-mono">
+                  <th className="py-3 px-3 font-bold">PB/L</th>
+                  <th className="py-3 px-4 font-bold">NOMBRES</th>
+                  <th className="py-3 px-3 font-bold">RESPONSABLE</th>
+                  <th className="py-3 px-3 font-bold">NUMERO</th>
+                  <th className="py-3 px-3 font-bold">ESTADO DE VENTA</th>
+                  <th className="py-3 px-4 font-bold">ESTRATEGIA DEL MENSAJE (AUTÓNOMO)</th>
+                  <th className="py-3 px-3 font-bold text-right">ESTADO</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-janm-border/40">
+                {currentBatch.map((c, index) => {
+                  const isSent = c.estadoDespacho === 'DESPACHADO';
+                  const isCurrentTarget = isAutoSending && autoSendIndex === index;
 
-              return (
-                <div
-                  key={c.id}
-                  className={`p-5 rounded-2xl bg-janm-surface border transition-all flex flex-col lg:flex-row gap-5 justify-between ${
-                    isDispatched
-                      ? 'border-emerald-500/40 bg-emerald-950/10'
-                      : 'border-janm-border hover:border-amber-400/40'
-                  }`}
-                >
-                  {/* Ficha del Registro */}
-                  <div className="lg:w-1/3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-md bg-zinc-800 text-zinc-400 font-mono text-xs flex items-center justify-center">
-                        #{currentBatchIndex * batchSize + indexInBatch + 1}
-                      </span>
-                      <div>
-                        <h3 className="font-bold text-sm text-white">{c.fullName}</h3>
-                        <span className="text-xs text-emerald-400 font-mono flex items-center gap-1">
-                          <Phone className="w-3 h-3" />
-                          {c.phone}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 text-xs space-y-1">
-                      <div className="text-zinc-400">
-                        <strong>Programa de Interés:</strong>{' '}
-                        <span className="text-amber-300">{c.courseInterest}</span>
-                      </div>
-                      <div className="text-zinc-400">
-                        <strong>Estado:</strong>{' '}
-                        <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">
-                          {isDispatched ? 'Enviado' : c.lastStatus}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mensaje Contextual */}
-                  <div className="flex-1 space-y-2">
-                    <div className="flex justify-between items-center text-[11px] text-zinc-400">
-                      <span className="font-semibold text-zinc-300">Mensaje Contextualizado:</span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(c.generatedMessage || '');
-                          setCopiedId(c.id);
-                          setTimeout(() => setCopiedId(null), 2500);
-                        }}
-                        className="hover:text-white flex items-center gap-1 cursor-pointer"
-                      >
-                        {copiedId === c.id ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-400" />
-                            <span className="text-emerald-400">Copiado</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>Copiar</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <textarea
-                      rows={4}
-                      value={c.generatedMessage || ''}
-                      onChange={e => {
-                        const newText = e.target.value;
-                        setContacts(prev =>
-                          prev.map(item =>
-                            item.id === c.id
-                              ? {
-                                  ...item,
-                                  generatedMessage: newText,
-                                  whatsappUrl: `https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(newText)}`,
-                                }
-                              : item
-                          )
-                        );
-                      }}
-                      className="w-full bg-janm-dark border border-janm-border rounded-xl p-3 text-xs text-zinc-200 leading-relaxed outline-none focus:border-janm-gold"
-                    />
-                  </div>
-
-                  {/* Botón de Despacho 1 Clic */}
-                  <div className="lg:w-48 flex flex-col justify-center gap-2 shrink-0">
-                    <a
-                      href={c.whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => handleDispatchContact(c.id)}
-                      className={`w-full py-3 px-4 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all text-center ${
-                        isDispatched
-                          ? 'bg-zinc-800 border border-emerald-500/40 text-emerald-300'
-                          : 'bg-emerald-600 hover:bg-emerald-500'
+                  return (
+                    <tr
+                      key={c.id}
+                      className={`transition-colors ${
+                        isCurrentTarget
+                          ? 'bg-amber-500/15 border-l-4 border-amber-400'
+                          : isSent
+                          ? 'bg-emerald-950/15'
+                          : 'hover:bg-janm-surfaceLight/50'
                       }`}
                     >
-                      <Send className="w-4 h-4" />
-                      <span>{isDispatched ? 'Reenviar WhatsApp' : 'Enviar WhatsApp'}</span>
-                    </a>
-                    {isDispatched && (
-                      <span className="text-[10px] text-emerald-400 text-center font-semibold">
-                        ✓ Despacho registrado
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
+                      {/* PB/L */}
+                      <td className="py-3.5 px-3 font-mono text-zinc-400 text-[11px]">
+                        {c.codigo}
+                      </td>
+
+                      {/* NOMBRES */}
+                      <td className="py-3.5 px-4 font-bold text-white text-xs">
+                        {c.nombres}
+                      </td>
+
+                      {/* RESPONSABLE */}
+                      <td className="py-3.5 px-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          {c.responsable}
+                        </span>
+                      </td>
+
+                      {/* NUMERO */}
+                      <td className="py-3.5 px-3 font-mono text-emerald-400 text-xs">
+                        {c.numero}
+                      </td>
+
+                      {/* ESTADO DE VENTA (Con los colores exactos de su Excel) */}
+                      <td className="py-3.5 px-3">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono ${
+                            c.estadoVenta === 'CERRADO'
+                              ? 'bg-emerald-500 text-black font-extrabold'
+                              : c.estadoVenta === 'PERDIDO'
+                              ? 'bg-red-700 text-white'
+                              : 'bg-purple-900/60 text-purple-200 border border-purple-500/30'
+                          }`}
+                        >
+                          {c.estadoVenta}
+                        </span>
+                      </td>
+
+                      {/* MENSAJE GENERADO AUTOMÁTICO */}
+                      <td className="py-3.5 px-4">
+                        <div className="max-w-md">
+                          <p className="text-[11px] text-zinc-300 line-clamp-2 leading-relaxed">
+                            {c.mensajeGenerado}
+                          </p>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(c.mensajeGenerado || '');
+                              setCopiedId(c.id);
+                              setTimeout(() => setCopiedId(null), 2000);
+                            }}
+                            className="text-[10px] text-amber-400 hover:underline mt-0.5 inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedId === c.id ? '✓ Copiado al portapapeles' : 'Ver y copiar mensaje'}
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* ESTADO / ACCIÓN MANUAL O AUTOMÁTICA */}
+                      <td className="py-3.5 px-3 text-right">
+                        {isSent ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-400 font-bold text-[11px]">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Enviado
+                          </span>
+                        ) : (
+                          <a
+                            href={c.whatsappUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => {
+                              setContacts(prev =>
+                                prev.map(item => (item.id === c.id ? { ...item, estadoDespacho: 'DESPACHADO' } : item))
+                              );
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] inline-flex items-center gap-1"
+                          >
+                            <Send className="w-3 h-3" />
+                            <span>Enviar</span>
+                          </a>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* BOTÓN INFERIOR DE AVANCE DE LOTE */}
+        {/* NAVEGACIÓN Y SIGUIENTE LOTE */}
         <div className="p-4 rounded-2xl bg-janm-surface border border-janm-border flex items-center justify-between">
           <span className="text-xs text-zinc-400">
-            ¿Terminaste de enviar a estos 10 contactos?
+            Lote actual: 10 contactos ({sentCountInBatch} enviados). Pausa automática de 30 minutos al completar.
           </span>
           <button
-            onClick={handleStartCooldown}
+            onClick={() => {
+              if (currentBatchIndex < totalBatches - 1) {
+                setCurrentBatchIndex(prev => prev + 1);
+                setIsCooldownActive(true);
+                setSecondsRemaining(30 * 60);
+              } else {
+                alert('¡Has completado todos los registros!');
+              }
+            }}
             disabled={currentBatchIndex >= totalBatches - 1}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold text-xs hover:brightness-110 shadow-gold-sm transition-all cursor-pointer disabled:opacity-40"
+            className="px-5 py-2 rounded-xl bg-janm-surfaceLight border border-janm-border text-zinc-300 hover:text-white text-xs font-semibold disabled:opacity-40"
           >
-            Pausar 30 Minutos y Pasar al Siguiente Lote ({currentBatchIndex + 2} de {totalBatches})
+            Avanzar al Lote Siguiente ({currentBatchIndex + 2} de {totalBatches})
           </button>
         </div>
       </div>

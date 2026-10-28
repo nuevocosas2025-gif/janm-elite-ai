@@ -1,72 +1,80 @@
 /**
- * ORATORIA JANM ELITE - AGENTE DE SEGUIMIENTO Y MENSAJERÍA AUTOMÁTICA
- * Conecta los contactos de Google Sheets y redacta mensajes de WhatsApp personalizados con IA.
+ * ORATORIA JANM ELITE - SERVICIO DE MENSAJERÍA AUTOMÁTICA SEGÚN ESTADO DE VENTA
+ * Adaptado a la estructura real de la hoja: NOMBRES, RESPONSABLE, NUMERO, ESTADO DE VENTA, DESCRIPCION.
  */
 
 import { normalizePhone } from '@/lib/security';
 
-export interface OutboundContact {
+export interface EvaSheetContact {
   id: string;
-  fullName: string;
-  phone: string;
-  courseInterest: string;
-  lastStatus: string;
-  notes?: string;
-  generatedMessage?: string;
+  codigo: string;
+  nombres: string;
+  responsable: string;
+  numero: string;
+  estadoVenta: 'NO RESPONDE' | 'PERDIDO' | 'CERRADO' | 'NUEVO' | string;
+  descripcion?: string;
+  mensajeGenerado?: string;
   whatsappUrl?: string;
+  estadoDespacho: 'PENDIENTE' | 'EN_COLA' | 'DESPACHADO';
 }
 
 export const aiOutboundService = {
   /**
-   * Genera un mensaje altamente persuasivo y personalizado con IA para cada cliente de la hoja de cálculo
+   * Genera el mensaje según el ESTADO DE VENTA exacto de la hoja de cálculo
    */
-  generatePersonalizedMessage(contact: {
-    fullName: string;
-    courseInterest?: string;
-    notes?: string;
-    lastStatus?: string;
+  generateMessageBySalesState(contact: {
+    nombres: string;
+    responsable: string;
+    estadoVenta: string;
+    descripcion?: string;
   }): string {
-    const firstName = contact.fullName.split(' ')[0] || contact.fullName;
-    const course = contact.courseInterest || 'nuestros programas de Oratoria y Liderazgo';
+    const nombreLimpio = contact.nombres.trim();
+    const saludoNombre = nombreLimpio ? `¡Hola ${nombreLimpio.split(' ')[0]}!` : '¡Hola!';
+    const asesor = contact.responsable || 'Eva Rinza';
+    const estado = (contact.estadoVenta || '').toUpperCase();
 
-    // Personalización según el tipo de curso
-    if (course.toLowerCase().includes('niño') || course.toLowerCase().includes('junior') || course.toLowerCase().includes('adolescente')) {
-      return `¡Hola ${firstName}! 👋 Te saluda el equipo de admisiones de *ORATORIA JANM ELITE*. Vimos que estabas interesada/o en el programa de *Oratoria para Niños y Adolescentes (Junior Elite)* para potenciar la seguridad y desenvolvimiento de tu hijo/a. 🌟\n\nEstamos abriendo cupos exclusivos para el nuevo ciclo de este mes con dinámicas 100% prácticas. ¿Te gustaría que te reserve una vacante con la tarifa promocional de S/ 280?`;
+    // 1. Prospectos con estado 'PERDIDO' (Estrategia: Reactivación con Tarifa Especial)
+    if (estado.includes('PERDIDO')) {
+      return `${saludoNombre} 👋 Te saluda ${asesor} de la Academia *ORATORIA JANM ELITE*. Te escribo porque anteriormente mostraste interés en vencer el miedo escénico y hablar con poder en público. 🏆\n\nSabemos que por tiempo o motivos personales no pudiste iniciar, pero este mes abrimos un *grupo intensivo con una tarifa preferencial exclusiva*. ¿Te gustaría que te comparta los nuevos horarios de sábados?`;
     }
 
-    if (course.toLowerCase().includes('debate') || course.toLowerCase().includes('argumentaci')) {
-      return `¡Hola ${firstName}! 🎯 Un saludo de *ORATORIA JANM ELITE*. Notamos tu interés en el programa especializado de *Debate, Argumentación y Negociación*. Queremos consultarte si aún estás buscando mejorar tus habilidades dialécticas y persuasión para tus proyectos profesionales. Tenemos vacantes abiertas para este viernes. ¿Te envío el temario detallado?`;
+    // 2. Prospectos con estado 'NO RESPONDE' (Estrategia: Seguimiento Asertivo de Bajo Compromiso)
+    if (estado.includes('NO RESPO') || estado.includes('NO CONTESTA')) {
+      return `${saludoNombre} 👋 Un cordial saludo de parte de ${asesor} en *ORATORIA JANM ELITE*. Me comunico brevemente contigo para confirmar si aún estás evaluando capacitarte en oratoria y liderazgo este mes. Tenemos vacantes limitadas en modalidad presencial y virtual. ¿Deseas que te reserve una vacante informativa sin compromiso?`;
     }
 
-    if (course.toLowerCase().includes('online') || course.toLowerCase().includes('media') || course.toLowerCase().includes('virtual')) {
-      return `¡Hola ${firstName}! 🎙️ Te saluda *ORATORIA JANM ELITE*. Te escribimos respecto al programa de *Media Training y Comunicación Efectiva Online*. Las clases en vivo vía Zoom inician esta semana y aún nos quedan 3 cupos con certificación oficial. ¿Te gustaría participar de la sesión informativa?`;
+    // 3. Clientes con estado 'CERRADO' (Estrategia: Fidelización y Confirmación de Inicio)
+    if (estado.includes('CERRADO') || estado.includes('MATRICULADO')) {
+      return `Estimado/a ${nombreLimpio || 'Alumno/a'}, ¡un saludo de la Academia *ORATORIA JANM ELITE*! 🎓 Confirmamos que tu proceso de matrícula ha sido gestionado con éxito junto a tu asesora ${asesor}. Estamos listos para recibirte en el salón con atriles y micrófono en mano para iniciar tu transformación oratoria. ¿Tienes alguna consulta sobre la primera clase?`;
     }
 
-    // Mensaje por defecto para Oratoria de Alto Impacto
-    return `¡Hola ${firstName}! 👋 Un cordial saludo de la academia *ORATORIA JANM ELITE*. Nos comunicamos contigo porque registraste tu interés en nuestro programa insignia *Oratoria y Liderazgo de Alto Impacto* para vencer el miedo escénico y hablar con autoridad ante cualquier público. 🏆\n\nLas clases de los sábados por la mañana inician pronto. ¿Deseas que te reservemos tu vacante o tienes alguna duda sobre los horarios?`;
+    // 4. Prospecto 'NUEVO' o General
+    return `${saludoNombre} 👋 Te saluda ${asesor} de la Academia *ORATORIA JANM ELITE*. Vimos tu registro de interés en nuestros programas oficiales de oratoria para adultos y jóvenes. 🌟 ¿Te gustaría conocer los horarios de este fin de semana y la certificación oficial con valor curricular?`;
   },
 
   /**
-   * Prepara la lista de envíos generando enlaces directos de WhatsApp Click-to-Chat
+   * Prepara la lista completa de contactos enriquecida
    */
-  prepareCampaign(contacts: {
+  prepareEvaCampaign(contacts: {
     id: string;
-    fullName: string;
-    phone: string;
-    courseInterest: string;
-    lastStatus: string;
-    notes?: string;
-  }[]): OutboundContact[] {
+    codigo: string;
+    nombres: string;
+    responsable: string;
+    numero: string;
+    estadoVenta: string;
+    descripcion?: string;
+  }[]): EvaSheetContact[] {
     return contacts.map(c => {
-      const message = this.generatePersonalizedMessage(c);
-      const cleanPhone = normalizePhone(c.phone) || c.phone.replace(/\D/g, '');
-      const encodedMsg = encodeURIComponent(message);
+      const mensaje = this.generateMessageBySalesState(c);
+      const cleanPhone = normalizePhone(c.numero) || c.numero.replace(/\D/g, '');
+      const encodedMsg = encodeURIComponent(mensaje);
       const whatsappUrl = `https://wa.me/${cleanPhone.replace('+', '')}?text=${encodedMsg}`;
 
       return {
         ...c,
-        generatedMessage: message,
+        mensajeGenerado: mensaje,
         whatsappUrl,
+        estadoDespacho: 'PENDIENTE',
       };
     });
   }
