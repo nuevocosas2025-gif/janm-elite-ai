@@ -65,7 +65,17 @@ export class HeuristicRuleBasedProvider implements IAIProvider {
       };
     }
 
-    // 3. Consulta de CURSOS, PRECIOS, HORARIOS Y MODALIDADES
+    // 3. Consulta de CERTIFICACIÓN
+    if (text.includes('certifica') || text.includes('diploma') || text.includes('valor curricular')) {
+      const faqRes = await agentTools.searchFAQ('certificacion');
+      const doc = faqRes.data?.[0];
+      return {
+        message: `🎓 **Certificación Oficial JANM Elite:**\n\n${doc?.content || 'Al concluir el programa con 80% de asistencia mínima y aprobar la sustentación final en público, se entrega Certificado Oficial con valor curricular y código de verificación.'}\n\n¿Te gustaría consultar los requisitos o fechas de inicio?`,
+        provider: 'no_ia_heuristic',
+      };
+    }
+
+    // 4. Consulta de CURSOS, PRECIOS, HORARIOS Y MODALIDADES
     const coursesRes = await agentTools.searchCourses();
     const courses = coursesRes.data || [];
 
